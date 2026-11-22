@@ -47,10 +47,27 @@ void handleInput(sf::RenderWindow& window, std::vector<InputEvent>& input)
     }
 }
 
-void updateGame(const std::vector<InputEvent>& /* input */)
+void updateGame(const std::vector<InputEvent>& input, int& selectedMenuOption, sf::RenderWindow& window)
 {
-    // Team TODO: Add your own game update code here.
+    for (const InputEvent& event : input)
+    {
+        if (event.key == sf::Keyboard::Key::Down && selectedMenuOption < 2)
+        {
+            ++selectedMenuOption;
+        }
+        else if (event.key == sf::Keyboard::Key::Up && selectedMenuOption > 0)
+        {
+            --selectedMenuOption;
+        }
+        else if (event.key == sf::Keyboard::Key::Enter && selectedMenuOption == 2)
+        {
+            window.close();
+            return;
+        }
+    }
 }
+
+
 
 void drawText(sf::RenderWindow& window, const sf::Font& font,
               const std::string& words, unsigned size, float x, float y)
@@ -122,17 +139,25 @@ void drawCandy(sf::RenderWindow& window, int row, int col, int candyId, bool hig
     window.draw(candy);
 }
 
-void drawGame(sf::RenderWindow& window, const sf::Font& font)
+void drawMenu(sf::RenderWindow& window, const sf::Font& font, int selectedMenuOption)
+{
+    drawText(window, font, "Candy Crush", 42, 160.f, 160.f);
+    drawText(window, font, selectedMenuOption == 0 ? "> New Game" : "  New Game", 24, 200.f, 260.f);
+    drawText(window, font, selectedMenuOption == 1 ? "> Continue" : "  Continue", 24, 200.f, 310.f);
+    drawText(window, font, selectedMenuOption == 2 ? "> Exit" : "  Exit", 24, 200.f, 360.f);
+}
+void drawGame(sf::RenderWindow & window, const sf::Font & font, int selectedMenuOption)
 {
     window.clear(sf::Color(12, 27, 32));
-    drawHud(window, font, "-", "-", "-");
-    drawGrid(window);
+   // drawHud(window, font, "-", "-", "-");
+    //drawGrid(window);
 
     // Static graphics preview. Replace this with calls from your board drawing code.
-    for (int col = 0; col < 6; ++col)
-        drawCandy(window, 0, col, col + 1, col == 0);
+    //for (int col = 0; col < 6; ++col)
+      //  drawCandy(window, 0, col, col + 1, col == 0);
 
-    drawText(window, font, "SFML graphics preview", 13, 20.f, 661.f);
+    //drawText(window, font, "SFML graphics preview", 13, 20.f, 661.f);
+    drawMenu(window, font, selectedMenuOption);
     window.display();
 }
 
@@ -153,13 +178,20 @@ int main(int argc, char* argv[])
     window.setKeyRepeatEnabled(false);
 
     std::vector<InputEvent> input;
+    int selectedMenuOption = 0;
     while (window.isOpen())
     {
         handleInput(window, input);
         if (!window.isOpen())
             break;
 
-        updateGame(input);
-        drawGame(window, font);
+        updateGame(input, selectedMenuOption, window);
+
+        if (!window.isOpen())
+        {
+            break;
+        }
+
+        drawGame(window, font, selectedMenuOption);
     }
 }
