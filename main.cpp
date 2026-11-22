@@ -47,6 +47,19 @@ void handleInput(sf::RenderWindow& window, std::vector<InputEvent>& input)
     }
 }
 
+bool cellFromClick(int mouseX, int mouseY, int& row, int& col)
+{
+    if(mouseX<20||mouseX>=580||mouseY<100||mouseY>=660)
+    {
+        return false;
+    }
+    
+    row = (mouseY - 100)/70;
+    col = (mouseX - 20)/70;
+
+    return true;
+}
+
 void updateGame(const std::vector<InputEvent>& input, int& selectedMenuOption, sf::RenderWindow& window)
 {
     for (const InputEvent& event : input)
@@ -63,6 +76,16 @@ void updateGame(const std::vector<InputEvent>& input, int& selectedMenuOption, s
         {
             window.close();
             return;
+        }
+        else if (event.isMouseClick)
+        {
+            int row = 0;
+            int col = 0;
+
+            if (cellFromClick(event.mouseX, event.mouseY, row, col))
+            {
+                std::cout << "Row: " << row << ", Column: " << col << std::endl;
+            }
         }
     }
 }
