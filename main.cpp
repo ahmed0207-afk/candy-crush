@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <fstream>
 
 constexpr unsigned WINDOW_WIDTH = 600;
 constexpr unsigned WINDOW_HEIGHT = 680;
@@ -14,6 +15,9 @@ constexpr float CELL_SIZE = 70.f;
 constexpr float BOARD_X = 20.f;
 constexpr float BOARD_Y = 100.f;
 
+// Functions Prototypes(2630)
+bool loadLevel(int grid[ROWS][COLS], int &movesLeft, int &target, std::string &errorMessage);
+
 struct InputEvent
 {
     bool isMouseClick = false;
@@ -23,7 +27,7 @@ struct InputEvent
 };
 
 // Collect raw events. Mouse coordinates are in window pixels.
-void handleInput(sf::RenderWindow& window, std::vector<InputEvent>& input)
+void handleInput(sf::RenderWindow &window, std::vector<InputEvent> &input)
 {
     input.clear();
 
@@ -35,25 +39,25 @@ void handleInput(sf::RenderWindow& window, std::vector<InputEvent>& input)
             return;
         }
 
-        if (const auto* mouse = event->getIf<sf::Event::MouseButtonPressed>())
+        if (const auto *mouse = event->getIf<sf::Event::MouseButtonPressed>())
         {
             if (mouse->button == sf::Mouse::Button::Left)
                 input.push_back({true, mouse->position.x, mouse->position.y});
         }
-        else if (const auto* keyboard = event->getIf<sf::Event::KeyPressed>())
+        else if (const auto *keyboard = event->getIf<sf::Event::KeyPressed>())
         {
             input.push_back({false, 0, 0, keyboard->code});
         }
     }
 }
 
-void updateGame(const std::vector<InputEvent>& /* input */)
+void updateGame(const std::vector<InputEvent> & /* input */)
 {
     // Team TODO: Add your own game update code here.
 }
 
-void drawText(sf::RenderWindow& window, const sf::Font& font,
-              const std::string& words, unsigned size, float x, float y)
+void drawText(sf::RenderWindow &window, const sf::Font &font,
+              const std::string &words, unsigned size, float x, float y)
 {
     sf::Text text(font, words, size);
     text.setPosition({x, y});
@@ -61,8 +65,8 @@ void drawText(sf::RenderWindow& window, const sf::Font& font,
     window.draw(text);
 }
 
-void drawHud(sf::RenderWindow& window, const sf::Font& font,
-             const std::string& score, const std::string& moves, const std::string& target)
+void drawHud(sf::RenderWindow &window, const sf::Font &font,
+             const std::string &score, const std::string &moves, const std::string &target)
 {
     sf::RectangleShape strip({static_cast<float>(WINDOW_WIDTH), 80.f});
     strip.setFillColor(sf::Color(23, 45, 50));
@@ -81,7 +85,7 @@ sf::Vector2f cellPosition(int row, int col)
     return {BOARD_X + col * CELL_SIZE, BOARD_Y + row * CELL_SIZE};
 }
 
-void drawGrid(sf::RenderWindow& window)
+void drawGrid(sf::RenderWindow &window)
 {
     sf::RectangleShape tile({CELL_SIZE - 4.f, CELL_SIZE - 4.f});
     tile.setFillColor(sf::Color(23, 45, 50));
@@ -99,13 +103,12 @@ void drawGrid(sf::RenderWindow& window)
 }
 
 // Draw one supplied candy. The caller decides which cells to highlight.
-void drawCandy(sf::RenderWindow& window, int row, int col, int candyId, bool highlighted)
+void drawCandy(sf::RenderWindow &window, int row, int col, int candyId, bool highlighted)
 {
     const sf::Color palette[] = {
         sf::Color::Transparent, sf::Color(255, 106, 121), sf::Color(244, 157, 94),
         sf::Color(247, 210, 92), sf::Color(107, 220, 162), sf::Color(106, 183, 247),
-        sf::Color(184, 150, 246)
-    };
+        sf::Color(184, 150, 246)};
     if (candyId < 1 || candyId > 6)
         return;
 
@@ -122,7 +125,7 @@ void drawCandy(sf::RenderWindow& window, int row, int col, int candyId, bool hig
     window.draw(candy);
 }
 
-void drawGame(sf::RenderWindow& window, const sf::Font& font)
+void drawGame(sf::RenderWindow &window, const sf::Font &font)
 {
     window.clear(sf::Color(12, 27, 32));
     drawHud(window, font, "-", "-", "-");
@@ -136,7 +139,39 @@ void drawGame(sf::RenderWindow& window, const sf::Font& font)
     window.display();
 }
 
-int main(int argc, char* argv[])
+bool loadLevel(int grid[ROWS][COLS], int &movesLeft, int &target, std::string &errorMessage)
+{
+    std::ifstream file("level.txt");
+    if (!file.is_open())
+    {
+        errorMessage = "Could not open level.txt";
+        return false;
+    }
+
+    int rows, cols;
+    file >> rows >> cols;        // 8 8
+    file >> movesLeft >> target; // 20 800
+
+    if (!file || rows != ROWS || cols != COLS)
+    {
+        errorMessage = "level.txt has a bad header or wrong board size";
+        return false;
+    }
+
+    for (int r = 0; r < ROWS; ++r)
+        for (int c = 0; c < COLS; ++c)
+            file >> grid[r][c];
+
+    if (!file)
+    {
+        errorMessage = "level.txt is missing candy values";
+        return false;
+    }
+
+    return true;
+}
+
+int main(int argc, char *argv[])
 {
     // CMake copies the font next to the executable.
     const auto folder = std::filesystem::absolute(argc > 0 ? argv[0] : "CandyCrushStarter").parent_path();
