@@ -18,8 +18,7 @@ constexpr int MENU = 0;
 constexpr int PLAYING = 1;
 
 // Functions Prototypes(2630)
-bool loadLevel(int grid[ROWS][COLS], int &movesLeft, int &target, std::string &errorMessage, const std::filesystem::path& levelPath);
-
+bool loadLevel(int grid[ROWS][COLS], int &movesLeft, int &target, std::string &errorMessage, const std::filesystem::path &levelPath);
 struct InputEvent
 {
     bool isMouseClick = false;
@@ -92,8 +91,8 @@ void markHorizontalMatches(const int grid[ROWS][COLS], bool marked[ROWS][COLS])
     }
 }
 
-void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, sf::RenderWindow &window, int& gameState, int grid[ROWS][COLS], int& movesLeft,
-    int& target, std::string& errorMessage, const std::filesystem::path& levelPath)
+void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, sf::RenderWindow &window, int &gameState, int grid[ROWS][COLS], int &movesLeft,
+                int &target, std::string &errorMessage, const std::filesystem::path &levelPath, int &selectedRow, int &selectedCol)
 {
     for (const InputEvent &event : input)
     {
@@ -106,7 +105,8 @@ void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, s
 
                 if (cellFromClick(event.mouseX, event.mouseY, row, col))
                 {
-                    std::cout << "Row: " << row << ", Column: " << col << std::endl;
+                    selectedRow = row;
+                    selectedCol = col;
                 }
             }
 
@@ -132,6 +132,8 @@ void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, s
             if (loadLevel(grid, movesLeft, target, errorMessage, levelPath))
             {
                 gameState = PLAYING;
+                selectedRow = -1;
+                selectedCol = -1;
             }
         }
     }
@@ -215,15 +217,15 @@ void drawMenu(sf::RenderWindow &window, const sf::Font &font, int selectedMenuOp
 }
 
 // Draw the entire board. The caller decides which cells to highlight.
-void drawBoard(sf::RenderWindow& window, int grid[ROWS][COLS])
+void drawBoard(sf::RenderWindow &window, int grid[ROWS][COLS], int selectedRow, int selectedCol)
 {
     for (int r = 0; r < ROWS; ++r)
         for (int c = 0; c < COLS; ++c)
-            drawCandy(window, r, c, grid[r][c], false);
+            drawCandy(window, r, c, grid[r][c], r == selectedRow && c == selectedCol);
 }
 
 void drawGame(sf::RenderWindow &window, const sf::Font &font, int selectedMenuOption, int gameState, int grid[ROWS][COLS], int movesLeft,
-    int target, const std::string& errorMessage)
+              int target, const std::string &errorMessage, int selectedRow, int selectedCol)
 {
     window.clear(sf::Color(12, 27, 32));
     // drawHud(window, font, "-", "-", "-");
@@ -246,15 +248,15 @@ void drawGame(sf::RenderWindow &window, const sf::Font &font, int selectedMenuOp
 
     case PLAYING:
         drawHud(window, font, "0", std::to_string(movesLeft),
-            std::to_string(target));
+                std::to_string(target));
         drawGrid(window);
-        drawBoard(window, grid);
+        drawBoard(window, grid, selectedRow, selectedCol);
         break;
     }
     window.display();
 }
 
-bool loadLevel(int grid[ROWS][COLS], int &movesLeft, int &target, std::string &errorMessage, const std::filesystem::path& levelPath)
+bool loadLevel(int grid[ROWS][COLS], int &movesLeft, int &target, std::string &errorMessage, const std::filesystem::path &levelPath)
 {
     std::ifstream file(levelPath);
     if (!file.is_open())
@@ -286,7 +288,7 @@ bool loadLevel(int grid[ROWS][COLS], int &movesLeft, int &target, std::string &e
     return true;
 }
 
-bool saveGame(const std::filesystem::path& savePath, const int grid[ROWS][COLS], int score, int movesLeft, int target)
+bool saveGame(const std::filesystem::path &savePath, const int grid[ROWS][COLS], int score, int movesLeft, int target)
 {
     std::ofstream file(savePath);
     if (!file)
@@ -309,9 +311,9 @@ bool saveGame(const std::filesystem::path& savePath, const int grid[ROWS][COLS],
     return !file.fail();
 }
 
-bool loadGame(const std::filesystem::path& savePath,
-    int grid[ROWS][COLS],
-    int& score, int& movesLeft, int& target)
+bool loadGame(const std::filesystem::path &savePath,
+              int grid[ROWS][COLS],
+              int &score, int &movesLeft, int &target)
 {
     std::ifstream file(savePath);
     if (!file)
@@ -363,6 +365,9 @@ bool loadGame(const std::filesystem::path& savePath,
 
 int main(int argc, char *argv[])
 {
+    int selectedRow = -1;
+    int selectedCol = -1;
+
     // CMake copies the font next to the executable.
     const auto folder = std::filesystem::absolute(argc > 0 ? argv[0] : "CandyCrushStarter").parent_path();
     sf::Font font;
@@ -391,14 +396,15 @@ int main(int argc, char *argv[])
             break;
 
         updateGame(input, selectedMenuOption, window,
-            gameState, grid, movesLeft, target, errorMessage,
-            folder / "level.txt");
+                   gameState, grid, movesLeft, target, errorMessage,
+                   folder / "level.txt", selectedRow, selectedCol);
 
         if (!window.isOpen())
         {
             break;
         }
 
-        drawGame(window, font, selectedMenuOption, gameState, grid, movesLeft, target, errorMessage);
+        drawGame(window, font, selectedMenuOption, gameState, grid, movesLeft, target, errorMessage,
+                 selectedRow, selectedCol);
     }
 }
