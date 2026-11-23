@@ -66,6 +66,32 @@ bool cellFromClick(int mouseX, int mouseY, int &row, int &col)
     return true;
 }
 
+void markHorizontalMatches(const int grid[ROWS][COLS], bool marked[ROWS][COLS])
+{
+    for (int row = 0; row < ROWS; row++)
+    {
+        for (int col = 0; col < COLS; col++)
+        {
+            marked[row][col] = false;
+        }
+    }
+
+    for (int row = 0; row < ROWS; row++)
+    {
+        for (int col = 0; col + 2 < COLS; col++)
+        {
+            int candy = grid[row][col];
+
+            if (candy != 0 && candy == grid[row][col + 1] && candy == grid[row][col + 2])
+            {
+                marked[row][col] = true;
+                marked[row][col + 1] = true;
+                marked[row][col + 2] = true;
+            }
+        }
+    }
+}
+
 void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, sf::RenderWindow &window, int& gameState, int grid[ROWS][COLS], int& movesLeft,
     int& target, std::string& errorMessage, const std::filesystem::path& levelPath)
 {
