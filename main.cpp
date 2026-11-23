@@ -286,6 +286,81 @@ bool loadLevel(int grid[ROWS][COLS], int &movesLeft, int &target, std::string &e
     return true;
 }
 
+bool saveGame(const std::filesystem::path& savePath, const int grid[ROWS][COLS], int score, int movesLeft, int target)
+{
+    std::ofstream file(savePath);
+    if (!file)
+    {
+        return false;
+    }
+
+    file << score << ' ' << movesLeft << ' ' << target << '\n';
+
+    for (int row = 0; row < ROWS; ++row)
+    {
+        for (int col = 0; col < COLS; ++col)
+        {
+            file << grid[row][col] << ' ';
+        }
+        file << '\n';
+    }
+
+    file.close();
+    return !file.fail();
+}
+
+bool loadGame(const std::filesystem::path& savePath,
+    int grid[ROWS][COLS],
+    int& score, int& movesLeft, int& target)
+{
+    std::ifstream file(savePath);
+    if (!file)
+    {
+        return false;
+    }
+
+    int loadedScore = 0;
+    int loadedMoves = 0;
+    int loadedTarget = 0;
+
+    if (!(file >> loadedScore >> loadedMoves >> loadedTarget))
+    {
+        return false;
+    }
+
+    int loadedGrid[ROWS][COLS]{};
+
+    for (int row = 0; row < ROWS; ++row)
+    {
+        for (int col = 0; col < COLS; ++col)
+        {
+            int candy = 0;
+            if (!(file >> candy) || candy < 1 || candy > 6)
+            {
+                return false;
+            }
+
+            loadedGrid[row][col] = candy;
+        }
+    }
+
+    for (int row = 0; row < ROWS; ++row)
+    {
+        for (int col = 0; col < COLS; ++col)
+        {
+            grid[row][col] = loadedGrid[row][col];
+        }
+    }
+
+    score = loadedScore;
+    movesLeft = loadedMoves;
+    target = loadedTarget;
+
+    return true;
+
+    return false; // Placeholder until loading is complete.
+}
+
 int main(int argc, char *argv[])
 {
     // CMake copies the font next to the executable.
