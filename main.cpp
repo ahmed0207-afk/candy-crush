@@ -51,22 +51,22 @@ void handleInput(sf::RenderWindow &window, std::vector<InputEvent> &input)
     }
 }
 
-bool cellFromClick(int mouseX, int mouseY, int& row, int& col)
+bool cellFromClick(int mouseX, int mouseY, int &row, int &col)
 {
-    if(mouseX<20||mouseX>=580||mouseY<100||mouseY>=660)
+    if (mouseX < 20 || mouseX >= 580 || mouseY < 100 || mouseY >= 660)
     {
         return false;
     }
-    
-    row = (mouseY - 100)/70;
-    col = (mouseX - 20)/70;
+
+    row = (mouseY - 100) / 70;
+    col = (mouseX - 20) / 70;
 
     return true;
 }
 
-void updateGame(const std::vector<InputEvent>& input, int& selectedMenuOption, sf::RenderWindow& window)
+void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, sf::RenderWindow &window)
 {
-    for (const InputEvent& event : input)
+    for (const InputEvent &event : input)
     {
         if (event.key == sf::Keyboard::Key::Down && selectedMenuOption < 2)
         {
@@ -94,10 +94,8 @@ void updateGame(const std::vector<InputEvent>& input, int& selectedMenuOption, s
     }
 }
 
-
-
-void drawText(sf::RenderWindow& window, const sf::Font& font,
-              const std::string& words, unsigned size, float x, float y)
+void drawText(sf::RenderWindow &window, const sf::Font &font,
+              const std::string &words, unsigned size, float x, float y)
 {
     sf::Text text(font, words, size);
     text.setPosition({x, y});
@@ -165,26 +163,34 @@ void drawCandy(sf::RenderWindow &window, int row, int col, int candyId, bool hig
     window.draw(candy);
 }
 
-void drawMenu(sf::RenderWindow& window, const sf::Font& font, int selectedMenuOption)
+void drawMenu(sf::RenderWindow &window, const sf::Font &font, int selectedMenuOption)
 {
     drawText(window, font, "Candy Crush", 42, 160.f, 160.f);
     drawText(window, font, selectedMenuOption == 0 ? "> New Game" : "  New Game", 24, 200.f, 260.f);
     drawText(window, font, selectedMenuOption == 1 ? "> Continue" : "  Continue", 24, 200.f, 310.f);
     drawText(window, font, selectedMenuOption == 2 ? "> Exit" : "  Exit", 24, 200.f, 360.f);
 }
-void drawGame(sf::RenderWindow & window, const sf::Font & font, int selectedMenuOption)
+void drawGame(sf::RenderWindow &window, const sf::Font &font, int selectedMenuOption)
 {
     window.clear(sf::Color(12, 27, 32));
-   // drawHud(window, font, "-", "-", "-");
-    //drawGrid(window);
+    // drawHud(window, font, "-", "-", "-");
+    // drawGrid(window);
 
     // Static graphics preview. Replace this with calls from your board drawing code.
-    //for (int col = 0; col < 6; ++col)
-      //  drawCandy(window, 0, col, col + 1, col == 0);
+    // for (int col = 0; col < 6; ++col)
+    //  drawCandy(window, 0, col, col + 1, col == 0);
 
-    //drawText(window, font, "SFML graphics preview", 13, 20.f, 661.f);
+    // drawText(window, font, "SFML graphics preview", 13, 20.f, 661.f);
     drawMenu(window, font, selectedMenuOption);
     window.display();
+}
+
+// Draw the entire board. The caller decides which cells to highlight.
+void drawBoard(sf::RenderWindow &window, int grid[ROWS][COLS])
+{
+    for (int r = 0; r < ROWS; ++r)
+        for (int c = 0; c < COLS; ++c)
+            drawCandy(window, r, c, grid[r][c], false);
 }
 
 bool loadLevel(int grid[ROWS][COLS], int &movesLeft, int &target, std::string &errorMessage)
