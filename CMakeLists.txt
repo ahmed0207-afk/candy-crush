@@ -21,5 +21,8 @@ set_target_properties(CandyCrushStarter PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${C
 add_custom_command(TARGET CandyCrushStarter POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets"
             "$<TARGET_FILE_DIR:CandyCrushStarter>/assets"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/level.txt"
+        "$<TARGET_FILE_DIR:CandyCrushStarter>/level.txt"
     VERBATIM
 )
