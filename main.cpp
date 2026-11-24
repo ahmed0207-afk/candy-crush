@@ -26,6 +26,13 @@ struct InputEvent
     int mouseY = 0;
     sf::Keyboard::Key key = sf::Keyboard::Key::Unknown;
 };
+bool saveGame(const std::filesystem::path& savePath,
+    const int grid[ROWS][COLS],
+    int score, int movesLeft, int target);
+
+bool loadGame(const std::filesystem::path& savePath,
+    int grid[ROWS][COLS],
+    int& score, int& movesLeft, int& target);
 
 // Collect raw events. Mouse coordinates are in window pixels.
 void handleInput(sf::RenderWindow &window, std::vector<InputEvent> &input)
@@ -92,12 +99,27 @@ void markHorizontalMatches(const int grid[ROWS][COLS], bool marked[ROWS][COLS])
 }
 
 void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, sf::RenderWindow &window, int &gameState, int grid[ROWS][COLS], int &movesLeft,
-                int &target, std::string &errorMessage, const std::filesystem::path &levelPath, int &selectedRow, int &selectedCol)
+                int &target, std::string &errorMessage, const std::filesystem::path &levelPath, int &selectedRow, int &selectedCol, int& score, const std::filesystem::path& savePath)
 {
     for (const InputEvent &event : input)
     {
         if (gameState == PLAYING)
         {
+            if (event.key == sf::Keyboard::Key::Escape)
+            {
+                if (saveGame(savePath, grid, score, movesLeft, target))
+                {
+                    errorMessage.clear();
+                    selectedMenuOption = 1;
+                    std::cout << "Saved to: " << savePath.string() << std::endl;
+                    gameState = MENU;
+                }
+                else
+                {
+                    std::cerr << "Could not save the game.\n";
+                }
+                return;
+            }
             if (event.isMouseClick)
             {
                 int row = 0;
@@ -134,7 +156,21 @@ void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, s
                 gameState = PLAYING;
                 selectedRow = -1;
                 selectedCol = -1;
+                score = 0;
             }
+        }
+        else if (event.key == sf::Keyboard::Key::Enter && selectedMenuOption == 1)
+        {
+            errorMessage.clear();
+            if (loadGame(savePath, grid, score, movesLeft, target))
+            {
+                selectedRow = -1;
+                selectedCol = -1;
+                gameState = PLAYING;
+                return;
+            }
+
+            errorMessage = "Could not load savegame.txt";
         }
     }
 }
@@ -225,7 +261,7 @@ void drawBoard(sf::RenderWindow &window, int grid[ROWS][COLS], int selectedRow, 
 }
 
 void drawGame(sf::RenderWindow &window, const sf::Font &font, int selectedMenuOption, int gameState, int grid[ROWS][COLS], int movesLeft,
-              int target, const std::string &errorMessage, int selectedRow, int selectedCol)
+              int target, const std::string &errorMessage, int selectedRow, int selectedCol, int score)
 {
     window.clear(sf::Color(12, 27, 32));
     // drawHud(window, font, "-", "-", "-");
@@ -247,7 +283,7 @@ void drawGame(sf::RenderWindow &window, const sf::Font &font, int selectedMenuOp
         break;
 
     case PLAYING:
-        drawHud(window, font, "0", std::to_string(movesLeft),
+        drawHud(window, font, std::to_string(score), std::to_string(movesLeft),
                 std::to_string(target));
         drawGrid(window);
         drawBoard(window, grid, selectedRow, selectedCol);
@@ -359,8 +395,6 @@ bool loadGame(const std::filesystem::path &savePath,
     target = loadedTarget;
 
     return true;
-
-    return false; // Placeholder until loading is complete.
 }
 
 int main(int argc, char *argv[])
@@ -387,6 +421,7 @@ int main(int argc, char *argv[])
     int gameState = MENU;
     int grid[ROWS][COLS]{};
     int movesLeft = 0;
+    int score = 0;
     int target = 0;
     std::string errorMessage;
     while (window.isOpen())
@@ -395,9 +430,8 @@ int main(int argc, char *argv[])
         if (!window.isOpen())
             break;
 
-        updateGame(input, selectedMenuOption, window,
-                   gameState, grid, movesLeft, target, errorMessage,
-                   folder / "level.txt", selectedRow, selectedCol);
+        updateGame(input, selectedMenuOption, window, gameState, grid, movesLeft, target, errorMessage, folder / "level.txt", selectedRow, selectedCol,
+            score, folder / "savegame.txt");
 
         if (!window.isOpen())
         {
@@ -405,6 +439,6 @@ int main(int argc, char *argv[])
         }
 
         drawGame(window, font, selectedMenuOption, gameState, grid, movesLeft, target, errorMessage,
-                 selectedRow, selectedCol);
+                 selectedRow, selectedCol, score);
     }
 }
