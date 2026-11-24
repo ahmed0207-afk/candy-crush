@@ -1,5 +1,7 @@
 #include <SFML/Graphics.hpp>
 
+#include <cstdlib>
+#include <utility>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -19,6 +21,7 @@ constexpr int PLAYING = 1;
 
 // Functions Prototypes(2630)
 bool loadLevel(int grid[ROWS][COLS], int &movesLeft, int &target, std::string &errorMessage, const std::filesystem::path &levelPath);
+
 struct InputEvent
 {
     bool isMouseClick = false;
@@ -26,13 +29,13 @@ struct InputEvent
     int mouseY = 0;
     sf::Keyboard::Key key = sf::Keyboard::Key::Unknown;
 };
-bool saveGame(const std::filesystem::path& savePath,
-    const int grid[ROWS][COLS],
-    int score, int movesLeft, int target);
+bool saveGame(const std::filesystem::path &savePath,
+              const int grid[ROWS][COLS],
+              int score, int movesLeft, int target);
 
-bool loadGame(const std::filesystem::path& savePath,
-    int grid[ROWS][COLS],
-    int& score, int& movesLeft, int& target);
+bool loadGame(const std::filesystem::path &savePath,
+              int grid[ROWS][COLS],
+              int &score, int &movesLeft, int &target);
 
 // Collect raw events. Mouse coordinates are in window pixels.
 void handleInput(sf::RenderWindow &window, std::vector<InputEvent> &input)
@@ -98,8 +101,45 @@ void markHorizontalMatches(const int grid[ROWS][COLS], bool marked[ROWS][COLS])
     }
 }
 
+bool isAdjacent(int r1, int c1, int r2, int c2)
+{
+    return std::abs(r1 - r2) + std::abs(c1 - c2) == 1;
+}
+
+bool anyMarked(const bool marked[ROWS][COLS])
+{
+    for (int r = 0; r < ROWS; ++r)
+        for (int c = 0; c < COLS; ++c)
+            if (marked[r][c])
+                return true;
+    return false;
+}
+
+bool trySwapCandies(int grid[ROWS][COLS], int r1, int c1, int r2, int c2)
+{
+    if (!isAdjacent(r1, c1, r2, c2))
+        return false;
+    if (grid[r1][c1] == 0 || grid[r2][c2] == 0)
+        return false;
+
+    std::swap(grid[r1][c1], grid[r2][c2]);
+
+    bool marked[ROWS][COLS]{};
+    markHorizontalMatches(grid, marked);
+    bool found = anyMarked(marked);
+
+    // markVerticalMatches(grid, marked);
+    // if (anyMarked(marked))
+    //     found = true;
+
+    if (!found)
+        std::swap(grid[r1][c1], grid[r2][c2]);
+
+    return found;
+}
+
 void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, sf::RenderWindow &window, int &gameState, int grid[ROWS][COLS], int &movesLeft,
-                int &target, std::string &errorMessage, const std::filesystem::path &levelPath, int &selectedRow, int &selectedCol, int& score, const std::filesystem::path& savePath)
+                int &target, std::string &errorMessage, const std::filesystem::path &levelPath, int &selectedRow, int &selectedCol, int &score, const std::filesystem::path &savePath)
 {
     for (const InputEvent &event : input)
     {
@@ -127,8 +167,23 @@ void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, s
 
                 if (cellFromClick(event.mouseX, event.mouseY, row, col))
                 {
-                    selectedRow = row;
-                    selectedCol = col;
+                    if (selectedRow == -1) // first click
+                    {
+                        selectedRow = row;
+                        selectedCol = col;
+                    }
+                    else if (isAdjacent(selectedRow, selectedCol, row, col)) // second click, neighbour
+                    {
+                        if (trySwapCandies(grid, selectedRow, selectedCol, row, col))
+                            movesLeft--; // spend a move only on a kept swap
+                        selectedRow = -1;
+                        selectedCol = -1;
+                    }
+                    else // not a neighbour: move the selection
+                    {
+                        selectedRow = row;
+                        selectedCol = col;
+                    }
                 }
             }
 
@@ -431,7 +486,7 @@ int main(int argc, char *argv[])
             break;
 
         updateGame(input, selectedMenuOption, window, gameState, grid, movesLeft, target, errorMessage, folder / "level.txt", selectedRow, selectedCol,
-            score, folder / "savegame.txt");
+                   score, folder / "savegame.txt");
 
         if (!window.isOpen())
         {
