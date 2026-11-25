@@ -101,6 +101,26 @@ void markHorizontalMatches(const int grid[ROWS][COLS], bool marked[ROWS][COLS])
     }
 }
 
+void markVerticalMatches(const int grid[ROWS][COLS], bool marked[ROWS][COLS])
+{
+    for (int col = 0; col < COLS; ++col)
+    {
+        for (int row = 0; row + 2 < ROWS; ++row)
+        {
+            const int candy = grid[row][col];
+
+            if (candy != 0 &&
+                candy == grid[row + 1][col] &&
+                candy == grid[row + 2][col])
+            {
+                marked[row][col] = true;
+                marked[row + 1][col] = true;
+                marked[row + 2][col] = true;
+            }
+        }
+    }
+}
+
 bool isAdjacent(int r1, int c1, int r2, int c2)
 {
     return std::abs(r1 - r2) + std::abs(c1 - c2) == 1;
@@ -128,9 +148,9 @@ bool trySwapCandies(int grid[ROWS][COLS], int r1, int c1, int r2, int c2)
     markHorizontalMatches(grid, marked);
     bool found = anyMarked(marked);
 
-    // markVerticalMatches(grid, marked);
-    // if (anyMarked(marked))
-    //     found = true;
+    markVerticalMatches(grid, marked);
+    if (anyMarked(marked))
+        found = true;
 
     if (!found)
         std::swap(grid[r1][c1], grid[r2][c2]);
