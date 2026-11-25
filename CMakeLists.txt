@@ -12,7 +12,7 @@ FetchContent_Declare(SFML
 )
 FetchContent_MakeAvailable(SFML)
 
-add_executable(CandyCrushStarter main.cpp)
+add_executable(CandyCrushStarter main.cpp scoring.cpp)
 target_compile_features(CandyCrushStarter PRIVATE cxx_std_17)
 target_link_libraries(CandyCrushStarter PRIVATE SFML::Graphics)
 set_target_properties(CandyCrushStarter PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

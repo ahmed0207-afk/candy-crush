@@ -36,6 +36,7 @@ bool saveGame(const std::filesystem::path &savePath,
 bool loadGame(const std::filesystem::path &savePath,
               int grid[ROWS][COLS],
               int &score, int &movesLeft, int &target);
+int calculateScore(int currentScore, int candiesCleared);
 
 // Collect raw events. Mouse coordinates are in window pixels.
 void handleInput(sf::RenderWindow &window, std::vector<InputEvent> &input)
