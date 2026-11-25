@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <ctime>
 
 constexpr unsigned WINDOW_WIDTH = 600;
 constexpr unsigned WINDOW_HEIGHT = 680;
@@ -36,7 +37,6 @@ bool saveGame(const std::filesystem::path &savePath,
 bool loadGame(const std::filesystem::path &savePath,
               int grid[ROWS][COLS],
               int &score, int &movesLeft, int &target);
-int calculateScore(int currentScore, int candiesCleared);
 
 // Collect raw events. Mouse coordinates are in window pixels.
 void handleInput(sf::RenderWindow &window, std::vector<InputEvent> &input)
@@ -136,7 +136,7 @@ bool anyMarked(const bool marked[ROWS][COLS])
     return false;
 }
 
-bool trySwapCandies(int grid[ROWS][COLS], int r1, int c1, int r2, int c2)
+bool trySwapCandies(int grid[ROWS][COLS], int r1, int c1, int r2, int c2, bool marked[ROWS][COLS])
 {
     if (!isAdjacent(r1, c1, r2, c2))
         return false;
@@ -145,7 +145,7 @@ bool trySwapCandies(int grid[ROWS][COLS], int r1, int c1, int r2, int c2)
 
     std::swap(grid[r1][c1], grid[r2][c2]);
 
-    bool marked[ROWS][COLS]{};
+    // bool marked[ROWS][COLS]{};
     markHorizontalMatches(grid, marked);
     bool found = anyMarked(marked);
 
@@ -176,6 +176,32 @@ int clearMarked(int grid[ROWS][COLS], const bool marked[ROWS][COLS])
     }
 
     return candiesCleared;
+}
+
+void applyGravity(int grid[ROWS][COLS])
+{
+    for (int col = 0; col < COLS; ++col)
+    {
+        int landing = ROWS - 1;
+        for (int row = ROWS - 1; row >= 0; --row)
+        {
+            if (grid[row][col] != 0)
+            {
+                grid[landing][col] = grid[row][col];
+                --landing;
+            }
+        }
+        for (int row = landing; row >= 0; --row)
+            grid[row][col] = 0;
+    }
+}
+
+void refillBoard(int grid[ROWS][COLS])
+{
+    for (int row = 0; row < ROWS; ++row)
+        for (int col = 0; col < COLS; ++col)
+            if (grid[row][col] == 0)
+                grid[row][col] = std::rand() % 6 + 1;
 }
 
 void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, sf::RenderWindow &window, int &gameState, int grid[ROWS][COLS], int &movesLeft,
@@ -214,8 +240,14 @@ void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, s
                     }
                     else if (isAdjacent(selectedRow, selectedCol, row, col)) // second click, neighbour
                     {
-                        if (trySwapCandies(grid, selectedRow, selectedCol, row, col))
-                            movesLeft--; // spend a move only on a kept swap
+                        bool marked[ROWS][COLS]{};
+                        if (trySwapCandies(grid, selectedRow, selectedCol, row, col, marked))
+                        {
+                            movesLeft--;               // spend a move only on a kept swap
+                            clearMarked(grid, marked); // Member 3 will use the returned count for scoring
+                            applyGravity(grid);
+                            refillBoard(grid);
+                        }
                         selectedRow = -1;
                         selectedCol = -1;
                     }
@@ -494,6 +526,7 @@ bool loadGame(const std::filesystem::path &savePath,
 
 int main(int argc, char *argv[])
 {
+    std::srand(static_cast<unsigned>(std::time(nullptr)));
     int selectedRow = -1;
     int selectedCol = -1;
 
