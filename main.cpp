@@ -158,6 +158,25 @@ bool trySwapCandies(int grid[ROWS][COLS], int r1, int c1, int r2, int c2)
     return found;
 }
 
+int clearMarked(int grid[ROWS][COLS], const bool marked[ROWS][COLS])
+{
+    int candiesCleared = 0;
+
+    for (int row = 0; row < ROWS; row++)
+    {
+        for (int col = 0; col < COLS; col++)
+        {
+            if (marked[row][col] && grid[row][col] != 0)
+            {
+                grid[row][col] = 0;
+                candiesCleared++;
+            }
+        }
+    }
+
+    return candiesCleared;
+}
+
 void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, sf::RenderWindow &window, int &gameState, int grid[ROWS][COLS], int &movesLeft,
                 int &target, std::string &errorMessage, const std::filesystem::path &levelPath, int &selectedRow, int &selectedCol, int &score, const std::filesystem::path &savePath)
 {
