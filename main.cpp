@@ -37,6 +37,7 @@ bool saveGame(const std::filesystem::path &savePath,
 bool loadGame(const std::filesystem::path &savePath,
               int grid[ROWS][COLS],
               int &score, int &movesLeft, int &target);
+int calculateScore(int currentScore, int candiesCleared);
 
 // Collect raw events. Mouse coordinates are in window pixels.
 void handleInput(sf::RenderWindow &window, std::vector<InputEvent> &input)
@@ -243,8 +244,9 @@ void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, s
                         bool marked[ROWS][COLS]{};
                         if (trySwapCandies(grid, selectedRow, selectedCol, row, col, marked))
                         {
-                            movesLeft--;               // spend a move only on a kept swap
-                            clearMarked(grid, marked); // Member 3 will use the returned count for scoring
+                            --movesLeft;
+                            const int candiesCleared = clearMarked(grid, marked);
+                            score = calculateScore(score, candiesCleared);
                             applyGravity(grid);
                             refillBoard(grid);
                         }
