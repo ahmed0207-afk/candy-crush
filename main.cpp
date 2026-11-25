@@ -245,10 +245,17 @@ void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, s
                         if (trySwapCandies(grid, selectedRow, selectedCol, row, col, marked))
                         {
                             --movesLeft;
-                            const int candiesCleared = clearMarked(grid, marked);
-                            score = calculateScore(score, candiesCleared);
-                            applyGravity(grid);
-                            refillBoard(grid);
+
+                            do
+                            {
+                                const int candiesCleared = clearMarked(grid, marked);
+                                score = calculateScore(score, candiesCleared);
+                                applyGravity(grid);
+                                refillBoard(grid);
+
+                                markHorizontalMatches(grid, marked);
+                                markVerticalMatches(grid, marked);
+                            } while (anyMarked(marked));
                         }
                         selectedRow = -1;
                         selectedCol = -1;
