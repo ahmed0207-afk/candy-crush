@@ -19,6 +19,8 @@ constexpr float BOARD_X = 20.f;
 constexpr float BOARD_Y = 100.f;
 constexpr int MENU = 0;
 constexpr int PLAYING = 1;
+constexpr int WON = 2;
+constexpr int LOST = 3;
 
 // Functions Prototypes(2630)
 bool loadLevel(int grid[ROWS][COLS], int &movesLeft, int &target, std::string &errorMessage, const std::filesystem::path &levelPath);
@@ -210,6 +212,17 @@ void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, s
 {
     for (const InputEvent &event : input)
     {
+        if (gameState == WON || gameState == LOST)
+        {
+            if (event.key == sf::Keyboard::Key::Enter)
+            {
+                selectedMenuOption = 0;
+                gameState = MENU;
+                return;
+            }
+
+            continue;
+        }
         if (gameState == PLAYING)
         {
             if (event.key == sf::Keyboard::Key::Escape)
@@ -256,6 +269,29 @@ void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, s
                                 markHorizontalMatches(grid, marked);
                                 markVerticalMatches(grid, marked);
                             } while (anyMarked(marked));
+                            if (score >= target)
+                            {
+                                gameState = WON;
+                            }
+                            else if (movesLeft <= 0)
+                            {
+                                gameState = LOST;
+                            }
+
+                            if (gameState == WON || gameState == LOST)
+                            {
+                                selectedRow = -1;
+                                selectedCol = -1;
+
+                                std::ofstream saveFile(savePath, std::ios::trunc);
+                                saveFile.close();
+                                if (!saveFile)
+                                {
+                                    std::cerr << "Could not clear savegame.txt." << std::endl;
+                                }
+
+                                return;
+                            }
                         }
                         selectedRow = -1;
                         selectedCol = -1;
@@ -306,7 +342,7 @@ void updateGame(const std::vector<InputEvent> &input, int &selectedMenuOption, s
                 return;
             }
 
-            errorMessage = "Could not load savegame.txt";
+            errorMessage = "No saved game";
         }
     }
 }
@@ -424,6 +460,14 @@ void drawGame(sf::RenderWindow &window, const sf::Font &font, int selectedMenuOp
         drawGrid(window);
         drawBoard(window, grid, selectedRow, selectedCol);
         break;
+    case WON:
+    case LOST:
+        drawText(window, font, gameState == WON ? "YOU WIN" : "GAME OVER",
+            42, 160.f, 240.f);
+        drawText(window, font, "Final score: " + std::to_string(score),
+            24, 160.f, 310.f);
+        drawText(window, font, "Press Enter", 20, 160.f, 360.f);
+        break;
     }
     window.display();
 }
@@ -447,14 +491,32 @@ bool loadLevel(int grid[ROWS][COLS], int &movesLeft, int &target, std::string &e
         return false;
     }
 
-    for (int r = 0; r < ROWS; ++r)
-        for (int c = 0; c < COLS; ++c)
-            file >> grid[r][c];
-
-    if (!file)
+    if (movesLeft <= 0)
     {
-        errorMessage = "level.txt is missing candy values";
+        errorMessage = "level.txt must start with at least one move";
         return false;
+    }
+
+    for (int r = 0; r < ROWS; ++r)
+    {
+        for (int c = 0; c < COLS; ++c)
+        {
+            int candy = 0;
+
+            if (!(file >> candy))
+            {
+                errorMessage = "level.txt is missing candy values";
+                return false;
+            }
+
+            if (candy < 1 || candy > 6)
+            {
+                errorMessage = "level.txt candy values must be 1 to 6";
+                return false;
+            }
+
+            grid[r][c] = candy;
+        }
     }
 
     return true;
@@ -497,7 +559,7 @@ bool loadGame(const std::filesystem::path &savePath,
     int loadedMoves = 0;
     int loadedTarget = 0;
 
-    if (!(file >> loadedScore >> loadedMoves >> loadedTarget))
+    if (!(file >> loadedScore >> loadedMoves >> loadedTarget) || loadedMoves <= 0)
     {
         return false;
     }
